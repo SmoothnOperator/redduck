@@ -80,6 +80,25 @@ describe("Raffle", function () {
   });
 
   describe("weighted-pick boundaries and dynamic USD pricing", function () {
+    it("maintains a running total of deposited tokens across deposits", async function () {
+      const { raffle, alice, bob } = await networkHelpers.loadFixture(deployFixture);
+
+      assert.equal(await raffle.read.totalTokens(), 0n);
+      assert.equal(await raffle.read.totalDeposited(), 0n);
+      assert.equal(await raffle.read.totalDeposits(), 0n);
+
+      await raffle.write.deposit([parseEther("1.5")], { account: alice.account });
+      assert.equal(await raffle.read.totalTokens(), parseEther("1.5"));
+      assert.equal(await raffle.read.totalDeposited(), parseEther("1.5"));
+      assert.equal(await raffle.read.totalDeposits(), parseEther("1.5"));
+
+      await raffle.write.deposit([parseEther("2.5")], { account: bob.account });
+      assert.equal(await raffle.read.totalTokens(), parseEther("4"));
+      assert.equal(await raffle.read.totalDeposited(), parseEther("4"));
+      assert.equal(await raffle.read.totalDeposits(), parseEther("4"));
+      assert.equal(await raffle.read.entryCount(), 2n);
+    });
+
     it("selects entry 0 on randomWord = 0 and at entry 0 upper boundary (endWeight - 1)", async function () {
       const { btc, coord, raffle, drawTime, alice, bob } =
         await networkHelpers.loadFixture(deployFixture);
