@@ -1,9 +1,14 @@
-// Signing helper for claimWithSignature. Implement this so the signature it
-// produces is accepted by your contract when signed by the `signer` passed to
-// the constructor. You choose the signing scheme — it must match what the
-// contract recovers and must bind the signature to the specific claimant.
+// Signing helper for claimWithSignature. Binds the signature to chainId,
+// the specific MerkleAirdrop contract address, the claimant address, and amount,
+// matching MerkleAirdrop.claimWithSignature() using EIP-191 personal_sign.
 
-import { type WalletClient, type Address } from "viem";
+import {
+  encodeAbiParameters,
+  keccak256,
+  parseSignature,
+  type WalletClient,
+  type Address,
+} from "viem";
 
 export interface ClaimSignatureParts {
   v: number;
@@ -15,8 +20,31 @@ export async function signAirdropClaim(
   signerWallet: WalletClient,
   claimant: Address,
   amount: bigint,
+  contractAddress: Address,
+  chainId: bigint,
 ): Promise<ClaimSignatureParts> {
-  // TODO: build the message your contract recovers over, sign it with
-  //       signerWallet, and split the signature into { v, r, s }.
-  throw new Error("signAirdropClaim not implemented");
+  if (!signerWallet.account) {
+    throw new Error("signAirdropClaim: signerWallet has no account");
+  }
+
+  const digest = keccak256(
+    encodeAbiParameters(
+      [{ type: "uint256" }, { type: "address" }, { type: "address" }, { type: "uint256" }],
+      [chainId, contractAddress, claimant, amount],
+    ),
+  );
+
+  const signatureHex = await signerWallet.signMessage({
+    account: signerWallet.account,
+    message: { raw: digest },
+  });
+
+  const parsed = parseSignature(signatureHex);
+  const v = Number(parsed.v ?? (parsed.yParity === 0 ? 27 : 28));
+
+  return {
+    v,
+    r: parsed.r,
+    s: parsed.s,
+  };
 }
