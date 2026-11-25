@@ -96,6 +96,10 @@ describe("Pair (pull-based AMM)", function () {
       );
 
       assert.equal(await pair.read.balanceOf([deployer.account.address]), expectedLp);
+      assert.equal(
+        await pair.read.balanceOf(["0x000000000000000000000000000000000000dEaD"]),
+        minLiq,
+      );
       assert.equal(await pair.read.totalSupply(), totalMinted);
       assert.equal(await pair.read.reserve0(), amt0);
       assert.equal(await pair.read.reserve1(), amt1);
