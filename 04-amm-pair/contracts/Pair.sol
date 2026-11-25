@@ -116,8 +116,12 @@ contract Pair is ERC20 {
         require(inToken.transferFrom(msg.sender, address(this), amountIn), "TRANSFER_FAILED");
         require(outToken.transfer(msg.sender, amountOut), "TRANSFER_FAILED");
 
-        reserve0 = token0.balanceOf(address(this));
-        reserve1 = token1.balanceOf(address(this));
+        uint256 newReserve0 = token0.balanceOf(address(this));
+        uint256 newReserve1 = token1.balanceOf(address(this));
+        require(newReserve0 * newReserve1 >= reserve0 * reserve1, "K_INVARIANT");
+
+        reserve0 = newReserve0;
+        reserve1 = newReserve1;
 
         emit Swapped(msg.sender, tokenIn, amountIn, amountOut);
     }
