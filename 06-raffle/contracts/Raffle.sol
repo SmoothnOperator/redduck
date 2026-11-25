@@ -36,6 +36,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     Entry[] public entries;
     uint256 public totalWeight;
+    /// @notice Running total of deposited tokens across all entries.
+    uint256 public totalTokens;
     uint256 public requestId;
     uint256 public randomWord;
 
@@ -105,15 +107,16 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert ZeroWeight();
         }
 
-        bool ok = token.transferFrom(msg.sender, address(this), amount);
-        if (!ok) {
-            revert TransferFailed();
-        }
-
         uint256 startWeight = totalWeight;
         uint256 endWeight = startWeight + weight;
         entries.push(Entry({player: msg.sender, startWeight: startWeight, endWeight: endWeight}));
         totalWeight = endWeight;
+        totalTokens += amount;
+
+        bool ok = token.transferFrom(msg.sender, address(this), amount);
+        if (!ok) {
+            revert TransferFailed();
+        }
 
         emit Deposited(msg.sender, amount, weight);
     }
@@ -203,5 +206,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /// @notice Number of deposited entries in the raffle.
     function entryCount() external view returns (uint256) {
         return entries.length;
+    }
+
+    /// @notice Running total of deposited tokens across all entries.
+    function totalDeposited() external view returns (uint256) {
+        return totalTokens;
+    }
+
+    /// @notice Running total of deposited tokens across all entries.
+    function totalDeposits() external view returns (uint256) {
+        return totalTokens;
     }
 }
